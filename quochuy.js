@@ -11,7 +11,8 @@ const io = new Server(server);
 const session = require("express-session");
 const { default: mongoose } = require("mongoose");
 const path = require("path");
-
+const RedisStore = require('connect-redis')(session);
+const redisClient = require('redis').createClient(process.env.REDIS_URL);
 // # Req Form
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -19,6 +20,7 @@ app.use(bodyParser.json());
 // # Session
 app.use(
   session({
+    store: new RedisStore({ client: redisClient }),
     secret: "mysecretkey",
     resave: false,
     saveUninitialized: true,
@@ -49,7 +51,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // # Server
 
 mongoose
-  .connect("mongodb://localhost:27017/chat_socket")
+  .connect("mongodb+srv://huydev:iXtADBYmNODF2Lye@cluster0.jluapiq.mongodb.net/chat_socket?retryWrites=true&w=majority")
   .then((result) => {
     server.listen(port, () => {
       console.log(`ứng dụng đang chạy với port: ${port}`);
