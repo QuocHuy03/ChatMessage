@@ -1,0 +1,33 @@
+<% 
+showMessageChat = (huyit, currentUser) => {
+    let xhtmlChats = '';
+    for (let i = 0; i < huyit.length; i++) {
+      let chat = huyit[i];
+      let typeShow = "";
+      let classUsername = "pull-left";
+      let classCreated = "pull-right";
+      if (currentUser == chat.username) {
+        typeShow = "right";
+        classUsername = "pull-right";
+        classCreated = "pull-left";
+      }
+      xhtmlChats += `
+        <div class="direct-chat-msg ${typeShow}">
+          <div class="direct-chat-info clearfix">
+            <span class="direct-chat-name ${classUsername}" style="padding-right: 18px;">${chat.username}</span>
+            <span class="direct-chat-timestamp ${classCreated}">${new Date(chat.createdAt).toLocaleString()}</span>
+          </div>
+          <!-- /.direct-chat-info -->
+          <img class="direct-chat-img" src="${chat.avatar}" alt="Message User Image" />
+          <!-- /.direct-chat-img -->
+          <div class="direct-chat-text">
+            ${chat.content}
+          </div>
+          <!-- /.direct-chat-text -->
+        </div>
+      `
+    }
+    return xhtmlChats;
+  }
+  
+ %>

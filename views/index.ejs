@@ -1,0 +1,193 @@
+<%- include('layout/header.ejs') %> <%- include('layout/navbar.ejs') %> <%-
+include('show-msg.ejs') %>
+
+<!-- Full Width Column -->
+<div class="content-wrapper">
+  <div class="container">
+    <!-- Main content -->
+    <section class="content">
+      <div class="col-md-8 no-padding-left">
+        <div class="box box-primary direct-chat direct-chat-primary">
+          <div class="box-header with-border">
+            <h3 class="box-title">Direct Chat</h3>
+          </div>
+          <!-- /.box-header -->
+          <div class="box-body">
+            <!-- Conversations are loaded here -->
+            <div class="direct-chat-messages">
+              <!-- Message. Default to the left -->
+              <%- showMessageChat(huyit,locals.username) %>
+            </div>
+
+            <!-- /.direct-chat-pane -->
+          </div>
+          <!-- /.box-body -->
+          <div class="box-footer">
+            <form method="POST" id="form-chat">
+              <div class="input-group">
+                <input
+                  type="text"
+                  id="content"
+                  placeholder="Type Message ..."
+                  class="form-control"
+                  required
+                />
+                <input type="hidden" id="userId" value="<%= locals.userID %>" />
+
+                <input
+                  type="hidden"
+                  id="avatar"
+                  value="/<%= locals.avatar %>"
+                />
+                <input
+                  type="hidden"
+                  id="username"
+                  value="<%= locals.username %>"
+                />
+                <span class="input-group-btn">
+                  <button type="submit" class="btn btn-primary btn-flat">
+                    Send
+                  </button>
+                </span>
+              </div>
+            </form>
+          </div>
+          <!-- /.box-footer-->
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="row">
+          <div class="box box-primary">
+            <div class="box-header with-border">
+              <h3 class="box-title">Online</h3>
+              <span
+                data-toggle="tooltip"
+                id="total-user"
+                class="badge bg-light-blue count"
+              ></span>
+              <div class="box-tools pull-right">
+                <button
+                  type="button"
+                  class="btn btn-box-tool"
+                  data-widget="collapse"
+                >
+                  <i class="fa fa-minus"></i>
+                </button>
+              </div>
+              <!-- /.box-tools -->
+            </div>
+            <!-- /.box-header -->
+            <div class="box-body" id="listUser"></div>
+            <!-- /.box-body -->
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.container -->
+</div>
+
+<script
+  src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+  integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+  crossorigin="anonymous"
+></script>
+
+<script>
+  $(function () {
+    let formChat = $("#form-chat");
+    let message = $("#content");
+    let username = $("#username");
+    let userId = $("#userId");
+
+    let avatar = $("#avatar");
+    let listMSG = $(".direct-chat-messages");
+    let totalUser = $("#total-user");
+    let listUserOnline = $("#listUser");
+    // ICON
+    message.emojioneArea();
+    // CONNECT
+    var socket = io.connect("http://localhost:2003");
+    // USER LIST MSG
+    socket.on("SERVER_RETURN_ALL_MESSAGE", (data) => {
+      let typeShow = "";
+      let classUsername = "pull-left";
+      let classCreated = "pull-right";
+      if (username.val() == data.username) {
+        typeShow = "right";
+        classUsername = "pull-right";
+        classCreated = "pull-left";
+      }
+      let xhtmlChats = `
+                  <div class="direct-chat-msg ${typeShow}">
+                      <div class="direct-chat-info clearfix">
+                        <span class="direct-chat-name ${classUsername}" style="padding-right: 18px;">${data.username}</span>
+                        <span class="direct-chat-timestamp ${classCreated}">${data.createAt}</span>
+                      </div>
+                      <img class="direct-chat-img" src="${data.avatar}" alt="Message User Image" />
+                      <div class="direct-chat-text">
+                        ${data.content}
+                      </div>
+                    </div>`;
+      listMSG.append(xhtmlChats);
+    });
+    // USER ERROR
+    socket.on("SERVER_RETURN_ERROR", (data) => {
+      console.log(data);
+      let xhtmlNotify = `
+            <div class="alert alert-danger alert-dismissible">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">x</button>
+              <strong>Error: </strong> ${data.content}
+            </div>
+      `;
+      $(xhtmlNotify).insertBefore(formChat);
+    });
+    // USER ONLINE
+    socket.on("connect", () => {
+      let params = {
+        username: username.val(),
+        avatar: avatar.val(),
+      };
+
+      socket.emit("USER_CONNECT", params);
+    });
+
+    // LIST
+
+    socket.on("SERVER_SEND_ALL_LIST_USER", (data) => {
+      let xhtml = "";
+      for (let i = 0; i < data.length; i++) {
+        let user = data[i];
+        // console.log(user);
+        if (user.username === username.val()) continue;
+        xhtml += `
+          <div class="user">
+            <div class="col-md-8 user-avatar">
+              <img
+                class="contacts-list-img"
+                src="${user.avatar}"
+                alt="${user.username}"
+              />
+              <h5>${user.username}</h5>
+            </div>
+          </div>
+        `;
+      }
+      listUserOnline.html(xhtml);
+      totalUser.html(data.length - 1);
+    });
+
+    // POST CLIENT
+    $("#form-chat").submit(function () {
+      socket.emit("CLIENT_SEND_ALL_MESSAGE", {
+        content: message.val(),
+        username: username.val(),
+        avatar: avatar.val(),
+      });
+      return false;
+    });
+  });
+</script>
+
+<%- include('layout/footer.ejs') %>
